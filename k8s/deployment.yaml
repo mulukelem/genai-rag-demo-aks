@@ -1,0 +1,27 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-chatbot-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rag-chatbot
+  template:
+    metadata:
+      labels:
+        app: rag-chatbot
+    spec:
+      containers:
+      - name: rag-chatbot-container
+        image: mywebacr.azurecr.io/rag-pdf-chatbot:latest
+        ports:
+        - containerPort: 8501
+        volumeMounts:
+        - mountPath: /mnt/models/llama
+          name: model-volume
+      volumes:
+      - name: model-volume
+        persistentVolumeClaim:
+          claimName: llama-model-pvc

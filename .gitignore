@@ -1,0 +1,49 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.env/
+.envrc
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Streamlit cache
+.streamlit/
+
+# Model binaries (store externally or mount in runtime)
+models/
+
+# Docker-related
+*.log
+*.pid
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
+
+# Python metadata
+*.egg-info/
+B
+B
+B
+B
+B
+B
+B
+B
+B
+B
+B
+B
+B
+B
+B
+B
+
