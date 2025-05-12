@@ -11,19 +11,29 @@ pipeline {
         STORAGE_ACCOUNT = 'ragstorageacct'
         FILE_SHARE_NAME = 'llamamodelshare'
         AZURE_CREDENTIALS_ID = 'azure-sp-credentials'
+        GIT_REPO          = 'https://github.com/mulukelem/genai-rag-demo-aks.git'  // Your repo URL
     }
 
     stages {
+        // Stage 1: Secure Code Checkout with GitHub PAT
         stage('Checkout Code') {
             steps {
-                withCredentials([string(credentialsId: 'github-seret-pat', variable: 'GIT_TOKEN')]) {
-                    sh '''
-                        git clone https://$GIT_TOKEN@github.com/mulukelem/genai-rag-demo-aks.git
-                        cd genai-rag-demo-aks
-                    '''
-                }
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: 'main']],
+                    extensions: [
+                        [$class: 'CleanBeforeCheckout'],
+                        [$class: 'CloneOption', depth: 1, shallow: true]
+                    ],
+                    userRemoteConfigs: [[
+                        url: "${GIT_REPO}",
+                        credentialsId: 'github-pat'  // Jenkins credential for GitHub PAT
+                    ]]
+                ])
+                sh 'echo "✅ Code checkout completed"'
             }
         }
+
 
         stage('Azure Login') {
             steps {
