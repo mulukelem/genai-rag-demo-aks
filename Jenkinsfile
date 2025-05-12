@@ -4,7 +4,7 @@ pipeline {
     environment {
         RESOURCE_GROUP = 'rag-poc-rg'
         AKS_CLUSTER = 'rag-poc-aks'
-        ACR_NAME = 'ragacr'
+        ACR_NAME = 'solpocacr'
         ACR_LOGIN_SERVER = "${ACR_NAME}.azurecr.io"
         IMAGE_NAME = 'rag-pdf-chatbot'
         IMAGE_TAG = 'latest'
