@@ -16,7 +16,12 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                git credentialsId: 'github-pat', url: 'https://github.com/mulukelem/genai-rag-demo-aks.git', branch: 'main'
+                withCredentials([string(credentialsId: 'github-pat', variable: 'GIT_TOKEN')]) {
+                    sh '''
+                        git clone https://$GIT_TOKEN@github.com/mulukelem/genai-rag-demo-aks.git
+                        cd genai-rag-demo-aks
+                    '''
+                }
             }
         }
 
