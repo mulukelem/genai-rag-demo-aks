@@ -14,6 +14,12 @@ pipeline {
     }
 
     stages {
+        stage('Checkout Code') {
+            steps {
+                git credentialsId: 'github-pat', url: 'https://github.com/mulukelem/genai-rag-demo-aks.git', branch: 'main'
+            }
+        }
+
         stage('Azure Login') {
             steps {
                 withCredentials([azureServicePrincipal(
@@ -44,24 +50,10 @@ pipeline {
 
         stage('Push to ACR') {
             steps {
-                withCredentials([azureServicePrincipal(
-                    credentialsId: "${AZURE_CREDENTIALS_ID}",
-                    subscriptionIdVariable: 'AZ_SUBSCRIPTION_ID',
-                    clientIdVariable: 'AZ_CLIENT_ID',
-                    clientSecretVariable: 'AZ_CLIENT_SECRET',
-                    tenantIdVariable: 'AZ_TENANT_ID'
-                )]) {
-                    sh '''
-                        # Get an ACR access token using the SP
-                        ACCESS_TOKEN=$(az acr login --name $ACR_NAME --expose-token --output tsv --query accessToken)
-
-                        # Use the access token to login to Docker
-                        echo $ACCESS_TOKEN | docker login $ACR_LOGIN_SERVER --username 00000000-0000-0000-0000-000000000000 --password-stdin
-
-                        # Push the Docker image
-                        docker push $ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG
-                    '''
-                }
+                sh '''
+                    az acr login --name $ACR_NAME
+                    docker push $ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG
+                '''
             }
         }
 
@@ -76,14 +68,14 @@ pipeline {
                 )]) {
                     sh '''
                         export AZURE_STORAGE_KEY=$(az storage account keys list \
-                          --resource-group $RESOURCE_GROUP \
-                          --account-name $STORAGE_ACCOUNT \
-                          --query "[0].value" -o tsv)
+                            --resource-group $RESOURCE_GROUP \
+                            --account-name $STORAGE_ACCOUNT \
+                            --query "[0].value" -o tsv)
 
                         az storage share create \
-                          --name $FILE_SHARE_NAME \
-                          --account-name $STORAGE_ACCOUNT \
-                          --account-key $AZURE_STORAGE_KEY
+                            --name $FILE_SHARE_NAME \
+                            --account-name $STORAGE_ACCOUNT \
+                            --account-key $AZURE_STORAGE_KEY
                     '''
                 }
             }
@@ -103,3 +95,4 @@ pipeline {
         }
     }
 }
+
