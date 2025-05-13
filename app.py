@@ -4,7 +4,7 @@ from llama_cpp import Llama
 
 st.title("RAG PDF Chatbot")
 
-llm = Llama(model_path="/mnt/models/llama/llama-model.gguf")
+llm = Llama(model_path="/mnt/models/llama/TinyLlama-1.1B-Chat-v1.0-GGUF")
 
 def generate_answer(query):
     response = llm(prompt=query, max_tokens=256)

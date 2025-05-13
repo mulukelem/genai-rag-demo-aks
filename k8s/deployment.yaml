@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: rag-chatbot-container
-        image: mywebacr.azurecr.io/rag-pdf-chatbot:latest
+        image: solpocacr.azurecr.io/rag-pdf-chatbot:latest
         ports:
         - containerPort: 8501
         volumeMounts:

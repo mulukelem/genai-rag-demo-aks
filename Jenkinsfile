@@ -2,18 +2,18 @@ pipeline {
     agent any
 
     environment {
-        RESOURCE_GROUP = 'rag-poc-rg'
-        AKS_CLUSTER = 'rag-poc-aks'
-        ACR_NAME = 'solpocacr'
-        ACR_LOGIN_SERVER = "${ACR_NAME}.azurecr.io"
-        IMAGE_NAME = 'rag-pdf-chatbot'
-        IMAGE_TAG = 'latest'
-        STORAGE_ACCOUNT = 'solragstorageacct'
-        FILE_SHARE_NAME = 'llamamodelshare'
-        AZURE_CREDENTIALS_ID = 'azure-sp-credentials'
-        GIT_REPO = 'https://github.com/mulukelem/genai-rag-demo-aks.git'
-        SECRET_NAME = 'azure-secret'
-        STORAGE_ACCOUNT_KEY = ''
+        RESOURCE_GROUP      = 'sol-rag-poc-rg'
+        AKS_CLUSTER         = 'sol-rag-poc-aks'
+        ACR_NAME            = 'solpocacr'
+        ACR_LOGIN_SERVER    = "${ACR_NAME}.azurecr.io"
+        IMAGE_NAME          = 'sol-rag-pdf-chatbot'
+        IMAGE_TAG           = 'latest'
+        STORAGE_ACCOUNT     = 'solragstorageacct'
+        FILE_SHARE_NAME     = 'solllamamodelshare'
+        SECRET_NAME         = 'azure-secret'
+        AZURE_CREDENTIALS_ID= 'azure-sp-credentials'
+        GIT_REPO            = 'https://github.com/mulukelem/genai-rag-demo-aks.git' // Your repo URL
+        LOCAL_MODEL_PATH    = 'models/llama-model' // Adjust if your local path is different
     }
 
     stages {
@@ -55,17 +55,34 @@ pipeline {
             }
         }
 
-        stage('Create ACR and File Share') {
+        stage('Build Docker Image') {
             steps {
-                script {
-                    // Create storage account and file share
-                    sh """
-                        az storage account create \
-                            --name $STORAGE_ACCOUNT \
-                            --resource-group $RESOURCE_GROUP \
-                            --sku Standard_LRS
+                sh '''
+                    docker build -t $ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG .
+                '''
+            }
+        }
 
-                        export AZURE_STORAGE_KEY=\$(az storage account keys list \
+        stage('Push to ACR') {
+            steps {
+                sh '''
+                    az acr login --name $ACR_NAME
+                    docker push $ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG
+                '''
+            }
+        }
+
+        stage('Create Azure File Share & Upload Model') {
+            steps {
+                withCredentials([azureServicePrincipal(
+                    credentialsId: "${AZURE_CREDENTIALS_ID}",
+                    subscriptionIdVariable: 'AZ_SUBSCRIPTION_ID',
+                    clientIdVariable: 'AZ_CLIENT_ID',
+                    clientSecretVariable: 'AZ_CLIENT_SECRET',
+                    tenantIdVariable: 'AZ_TENANT_ID'
+                )]) {
+                    sh '''
+                        export AZURE_STORAGE_KEY=$(az storage account keys list \
                             --resource-group $RESOURCE_GROUP \
                             --account-name $STORAGE_ACCOUNT \
                             --query "[0].value" -o tsv)
@@ -73,48 +90,52 @@ pipeline {
                         az storage share create \
                             --name $FILE_SHARE_NAME \
                             --account-name $STORAGE_ACCOUNT \
-                            --account-key \$AZURE_STORAGE_KEY
-                    """
+                            --account-key $AZURE_STORAGE_KEY || true
+
+                        az storage file upload-batch \
+                            --destination $FILE_SHARE_NAME \
+                            --source $LOCAL_MODEL_PATH \
+                            --account-name $STORAGE_ACCOUNT \
+                            --account-key $AZURE_STORAGE_KEY
+                    '''
                 }
             }
         }
 
-        stage('Build and Push Docker Image') {
+        stage('Create K8s Secret for FileShare Access') {
             steps {
-                sh '''
-                    docker build -t $ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG .
-                    az acr login --name $ACR_NAME
-                    docker push $ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG
-                '''
-            }
-        }
+                withCredentials([azureServicePrincipal(
+                    credentialsId: "${AZURE_CREDENTIALS_ID}",
+                    subscriptionIdVariable: 'AZ_SUBSCRIPTION_ID',
+                    clientIdVariable: 'AZ_CLIENT_ID',
+                    clientSecretVariable: 'AZ_CLIENT_SECRET',
+                    tenantIdVariable: 'AZ_TENANT_ID'
+                )]) {
+                    sh '''
+                        export STORAGE_ACCOUNT_KEY=$(az storage account keys list \
+                            --resource-group $RESOURCE_GROUP \
+                            --account-name $STORAGE_ACCOUNT \
+                            --query "[0].value" -o tsv)
 
-        stage('Deploy to AKS with CSI Volume') {
-            steps {
-                script {
-                    // Get Azure storage account key
-                    env.STORAGE_ACCOUNT_KEY = sh(
-                        script: "az storage account keys list --resource-group $RESOURCE_GROUP --account-name $STORAGE_ACCOUNT --query '[0].value' -o tsv",
-                        returnStdout: true
-                    ).trim()
-
-                    // Authenticate and prepare AKS
-                    sh """
                         az aks get-credentials --resource-group $RESOURCE_GROUP --name $AKS_CLUSTER --overwrite-existing
+
                         kubectl create secret generic $SECRET_NAME \
                           --from-literal=azurestorageaccountname=$STORAGE_ACCOUNT \
                           --from-literal=azurestorageaccountkey=$STORAGE_ACCOUNT_KEY \
                           --dry-run=client -o yaml | kubectl apply -f -
-                    """
-
-                    // Apply manifests
-                    sh '''
-                        kubectl apply -f k8s/pv.yaml
-                        kubectl apply -f k8s/pvc.yaml
-                        kubectl apply -f k8s/deployment.yaml
-                        kubectl apply -f k8s/service.yaml
                     '''
                 }
+            }
+        }
+
+        stage('Deploy to AKS') {
+            steps {
+                sh '''
+                    kubectl apply -f k8s/pv.yaml
+                    kubectl apply -f k8s/pvc.yaml
+                    kubectl apply -f k8s/deployment.yaml
+                    kubectl apply -f k8s/service.yaml
+                '''
             }
         }
     }
