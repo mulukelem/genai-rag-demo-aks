@@ -10,7 +10,7 @@ pipeline {
         IMAGE_TAG           = 'latest'
         STORAGE_ACCOUNT     = 'solragstorageacct'
         FILE_SHARE_NAME     = 'solllamamodelshare'
-        MOUNT_LOCAL_PATH    = 'models/llama-model'   // local folder where model file is kept
+        MOUNT_LOCAL_PATH    = '/home/mulusol/genai-rag-demo-aks/models/llama-model/'   // local folder where model file is kept
         CONTAINER_MOUNT_PATH= '/mnt/models/llama'    // mount path in container
         SECRET_NAME         = 'azure-secret'
         AZURE_CREDENTIALS_ID= 'azure-sp-credentials'
