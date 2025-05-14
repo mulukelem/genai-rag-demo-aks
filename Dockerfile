@@ -10,11 +10,15 @@ WORKDIR /app
 
 # Upgrade pip and install dependencies
 COPY requirements.txt .
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
 
-CMD ["python", "app.py"]
+# Expose port 80 (used by Streamlit in CMD)
+EXPOSE 80
+
+# Start Streamlit app on port 80
+CMD ["streamlit", "run", "app.py", "--server.port=80", "--server.enableCORS=false", "--server.enableXsrfProtection=false"]
 
