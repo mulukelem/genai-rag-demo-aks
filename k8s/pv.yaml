@@ -10,7 +10,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   azureFile:
     secretName: azure-secret
-    shareName: llamamodelshare
+    shareName: solllamamodelshare
     readOnly: true
   storageClassName: ""
 
