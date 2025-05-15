@@ -11,7 +11,8 @@ WORKDIR /app
 # Upgrade pip and install dependencies
 COPY requirements.txt .
 RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+    && pip install --no-cache-dir --timeout=1000 --retries=10 --resume-retries=5 -r requirements.txt
+ 
 
 # Copy application code
 COPY . .
