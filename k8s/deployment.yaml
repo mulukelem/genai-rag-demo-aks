@@ -17,7 +17,7 @@ spec:
       - name: rag-chatbot-container
         image: solpocacr.azurecr.io/rag-pdf-chatbot:latest
         ports:
-        - containerPort: 8501
+        - containerPort: 80
         volumeMounts:
         - mountPath: /mnt/models/llama
           name: model-volume

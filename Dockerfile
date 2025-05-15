@@ -17,8 +17,8 @@ RUN pip install --upgrade pip \
 COPY . .
 
 # Expose port 80 (used by Streamlit in CMD)
-EXPOSE 8501
+EXPOSE 80
 
 # Start Streamlit app on port 80
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableCORS=false", "--server.enableXsrfProtection=false"]
+CMD ["streamlit", "run", "app.py", "--server.port=80", "--server.address=0.0.0.0", "--server.enableCORS=false", "--server.enableXsrfProtection=false"]
 
