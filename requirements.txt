@@ -1,5 +1,4 @@
 llama-cpp-python==0.2.24
-openai
 streamlit
 PyPDF2
 sentence-transformers
